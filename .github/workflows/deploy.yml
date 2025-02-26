@@ -15,6 +15,9 @@ jobs:
 
       - name: Logout from Docker Hub (if exists)
         run: docker logout || true
+        
+      - name: Debug Secrets
+        run: echo "DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}"
 
       - name: Login to Docker Hub
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
