@@ -1,5 +1,5 @@
 # ML 서비스 Dockerfile 예시
-FROM python:3.9-slim
+FROM python:3.10.16
 WORKDIR /app
 COPY requirements.txt ./
 RUN pip install --upgrade pip
