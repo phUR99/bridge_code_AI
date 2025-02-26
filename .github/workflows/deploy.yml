@@ -36,6 +36,8 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          script_stop: true
           script: |
             docker pull ${{ secrets.DOCKER_USERNAME }}/ai:latest
             docker stop ai || true
