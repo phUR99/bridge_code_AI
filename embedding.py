@@ -26,8 +26,15 @@ def vectorspace(model, data_path:str="data.csv"):
 if __name__ == '__main__':
 
     dotenv.load_dotenv()
-    embedding_model = OpenAIEmbeddings(chunk_size=200)
-    db = vectorspace(embedding_model)
+    model_name = "BAAI/bge-small-en"
+    model_kwargs = {'device':'cpu'}
+    encode_kwargs = {'normalize_embeddings' : True}
+    hf = HuggingFaceEmbeddings(
+        model_name = model_name,
+        model_kwargs = model_kwargs,
+        encode_kwargs = encode_kwargs
+    )
+    db = vectorspace(hf)
     import time
     start = time.time()
     print(embedding(db, ["for"]))
