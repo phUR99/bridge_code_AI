@@ -1,6 +1,6 @@
 from langchain_community.embeddings import HuggingFaceEmbeddings, OpenAIEmbeddings
 import dotenv
-from langchain_community.vectorstores import Chroma, FAISS
+from langchain_chroma import Chroma
 from langchain_community.document_loaders import PyPDFLoader, DataFrameLoader
 import pandas as pd
 
