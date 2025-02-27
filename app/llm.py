@@ -10,6 +10,7 @@ class State(TypedDict, total= False):
     original_codes: str
     oneline_code: str
     user_id: str
+    prompt_model: str
 
 class LLM:
     def __init__(self):
@@ -40,15 +41,18 @@ class LLM:
         def initial_interpretation(state: State):
             """벡터 데이터 + 유저 입력 → LLM 호출"""
             #context = "\n".join(state["context_docs"])
-            prompt = self.prompt_initial_template.invoke({"original_codes": state["original_codes"], "context_docs": state["context_docs"]})
+            if state["prompt_model"] == "initial_model":
+                prompt = self.prompt_initial_template.invoke({"original_codes": state["original_codes"], "context_docs": state["context_docs"]})
+            elif state["prompt_model"] == "user_input_model":
+                prompt = self.prompt_hint_for_fail_template.invoke({"original_codes": state["original_codes"], "context_docs": state["context_docs"]})
             response = self.model.invoke(prompt)
-            return {"initial_response": response}
+            return {"response": response}
 
         def user_input_interpretation(state: State):
              #context = "\n".join(state["context_docs"])
             prompt = self.prompt_hint_for_fail_template.invoke({"context_docs": state["context_docs"], "oneline_code" : state["oneline_code"], "original_codes" : state["original_codes"]})
             response = self.model.invoke(prompt)
-            return {"user_input_response": response}
+            return {"response": response}
         
         def final_summary(state: State):
             memory_state = self.memory.load_state(state["user_id"])
@@ -57,8 +61,7 @@ class LLM:
             return {'final explanation': response}
 
         self.workflow.add_node("initial_interpretation", self.initial_interpretation)
-        self.workflow.add_node("user_input_interpretation", self.user_input_interpretation)
-        self.workflow.add_node("final_summary", self.final_summary)
+        
 
         self.workflow.add_edge(START, "initial_interpretation") 
 
@@ -66,11 +69,11 @@ class LLM:
         self.memory = MemorySaver() 
         self.app = self.workflow.compile(checkpointer=self.memory)
 
-    def interpret_initial_code(self, user_id: str, original_codes: str, context_docs: list[str]) -> str:
+    def interpret_initial_code(self, user_id: str, original_codes: str, context_docs: list[str], prompt_model : str) -> str:
         """사용자별 대화 이력 + RAG 응답 반환"""
         config = {"configurable": {"thread_id": user_id}}
-        state = {"context_docs": context_docs, "original_codes": original_codes, "user_id": user_id}
-        output = self.app.invoke_step("initial_interpretation",state, config )
+        state = {"context_docs": context_docs, "original_codes": original_codes, "user_id": user_id, "prompt_model" : prompt_model}
+        output = self.app.invoke(state, config)
         return output["initial_response"]
 
     def interpret_user_input(self, user_id: str, oneline_code: str, context_docs: list[str]) -> str:

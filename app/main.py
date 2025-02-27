@@ -69,7 +69,8 @@ def interpret_initial_code_api(request: InitialQueryRequest):
         response = llm.interpret_initial_code(
             user_id=request.user_id,
             original_codes = request.original_codes,
-            context_docs=embedding
+            context_docs=embedding,
+            prompt_model= "initial_model"
         )
         return {"response": response}
 
@@ -89,10 +90,12 @@ def interpret_user_input_api(request: UserInputRequest):
         #context_docs = query_vectorstore(embedding, n_results=3)
 
         #  3. LLM 호출 및 응답 반환
-        response = llm.interpret_user_input(
+        response = llm.interpret_initial_code(
             user_id=request.user_id,
             oneline_code = request.oneline_code,
-            context_docs = embedding
+            context_docs = embedding,
+            prompt_model = "user_input_model"
+            
         )
         return {"response": response}
 
