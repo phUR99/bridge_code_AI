@@ -3,56 +3,51 @@ import dotenv
 from langchain_community.vectorstores import Chroma, FAISS
 from langchain_community.document_loaders import PyPDFLoader, DataFrameLoader
 import pandas as pd
-import os
+
 
 def embedding(vectors, query: list, data_path:str='data.csv'):
     
     docs = vectors
     ret =[]
+    retrieve =  docs.as_retriever(search_type="mmr", search_kwargs={'k':3, 'fetch_k':10})
     for elements in query:
-        retrieved_docs = db.similarity_search(query=elements, k=3)
+        retrieved_docs = retrieve.invoke(input=elements)
         for context in retrieved_docs: 
-            ret.append(context.to_json())
+            ret.append(context.page_content)
     return ret
 
 def vectorspace(model, data_path:str="data.csv"):
     df = pd.read_csv(filepath_or_buffer= data_path)
     loader = DataFrameLoader(df, page_content_column="output")
     docs = loader.load()
-    db = Chroma.from_documents(documents=docs, embedding=model)
+    db = Chroma.from_documents(documents=docs, embedding=model, persist_directory="./chorma_db")
     return db
     
 
 if __name__ == '__main__':
 
     dotenv.load_dotenv()
-    from langchain_huggingface import HuggingFaceEmbeddings
     model_name = "BAAI/bge-small-en"
     model_kwargs = {'device':'cpu'}
     encode_kwargs = {'normalize_embeddings' : True}
-    model = HuggingFaceEmbeddings(model_name="BAAI/bge-small-en", model_kwargs=model_kwargs, encode_kwargs=encode_kwargs)
-    '''
-
     hf = HuggingFaceEmbeddings(
         model_name = model_name,
         model_kwargs = model_kwargs,
         encode_kwargs = encode_kwargs
     )
-    '''
-    print("model!")
+    import os
     if os.path.exists("chorma_db"):
         print("load")
-        db = Chroma(persist_directory="./chorma_db", embedding_function=model)
+        db = Chroma(persist_directory="./chorma_db", embedding_function=hf)
     else:
         print("make")
-        db = vectorspace(model=model)
-    #exit()
-    #db = vectorspace(model=model)
+        db = vectorspace(model=hf)
+
     import time
     start = time.time()
-    print(embedding(db, ["for"]))
-    print(embedding(db, ["for"]))
-    print(embedding(db, ["for"]))
-    print(time.time() - start)
+    result = embedding(db, ['elif'])
+    for ret in result:
+        print(result[0])
+
     
     

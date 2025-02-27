@@ -3,7 +3,7 @@ name: Deploy AI
 on:
   push:
     branches:
-      - main  # main 브랜치에 푸시될 때 실행
+      - api  # api 브랜치에 푸시될 때 실행
 
 jobs:
   build-and-deploy:
@@ -47,4 +47,5 @@ jobs:
             docker pull ${{ secrets.DOCKER_USERNAME }}/ai:latest
             docker stop ai || true
             docker rm ai || true
+            docker images --filter=reference="${{ secrets.DOCKER_USERNAME }}/ai" -q | xargs docker rmi -f || true
             docker run -d --name ai -p 5000:5000 ${{ secrets.DOCKER_USERNAME }}/ai:latest
