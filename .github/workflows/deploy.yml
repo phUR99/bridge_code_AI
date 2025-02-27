@@ -21,6 +21,12 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
+          
+      - name: Add environment variables to .env
+        run: |
+          echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" >> app/.env
+          echo "SAVILY_API_KEY=${{ secrets.SAVILY_API_KEY }}" >> app/.env
+          echo "HF_TOKEN=${{ secrets.HF_TOKEN }}" >> app/.env
 
       - name: Build Docker Image
         run: |
@@ -31,11 +37,12 @@ jobs:
           docker push ${{ secrets.DOCKER_USERNAME }}/ai:latest
 
       - name: Deploy on AWS EC2
-        uses: appleboy/ssh-action@v0.1.7
+        uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
           script: |
             docker pull ${{ secrets.DOCKER_USERNAME }}/ai:latest
             docker stop ai || true
