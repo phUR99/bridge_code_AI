@@ -24,31 +24,52 @@ class LLM:
         # 프롬프트 템플릿 정의
         prompt_initial_template = ChatPromptTemplate.from_messages(
             [
-                ("system", "당신은 30년 경력의 파이썬 교육자입니다. 사용자가 입력한 코드를 기반으로 {context_docs} 를 참조해서 한줄 한줄마다 코드의 의미를 설명하는 문장을 생성해주세요. 너무 복잡한 개념을 한꺼번에 설명하기보다는 초보자가 쉽게 따라할 수 있도록 단계적으로 설명하세요."),
+                ("system", "당신은 Python 프로그래밍을 가르치는 교육 도우미입니다. 사용자가 최종적으로 완성해야 할 파이썬 코드를 입력하면, "
+                        "각 코드 줄마다 하나의 가이드 문장을 작성해야 합니다. "
+                        "가이드는 코드가 수행해야 할 작업을 설명하며, 학생이 직접 코드를 작성할 수 있도록 유도해야 합니다. "
+                        "너무 복잡한 개념을 한꺼번에 설명하지 말고, 초보자가 이해하기 쉽게 단계적으로 안내하세요. "
+                        "반복 횟수, 변수명, 조건 등은 명확하게 서술하며, 불필요한 코드 설명은 배제하세요. "
+                        "만약 코드에 빈 줄이 포함되어 있다면 무시하세요."),
                 ("user", "{original_codes}")
             ]
         )
+
         prompt_hint_for_fail_template = ChatPromptTemplate.from_messages(
             [
-                ("system", "당신은 30년 경력의 파이썬 강사입니다. 학생이 한 줄씩 파이썬 코드를 입력하면 {context_docs}를 참조하고 사용자의 입력이 {original_codes} 의 한줄이라는걸 인지하고 코드의 오류 메시지를 만들어서 초보자가 이해할 수 있도록 쉽게 설명하세요. 어떤 부분에서  문제가 발생했는지 정확하게 짚어 주세요. 초보자가 실수를 방지할 수 있도록 힌트를 제공하세요. 코드 예제를 보여주지 마세요.너무 많은 정보를 한꺼번에 주지 말고, 핵심적인 부분만 짚어 주세요. 학생이 실수를 통해 학습할 수 있도록 유도하세요."),
+                ("system", "당신은 30년 경력의 파이썬 강사입니다. 학생이 한 줄씩 파이썬 코드를 입력하면, {context_docs}를 참조하여 "
+                        "해당 코드({oneline_code})가 {original_codes}의 한 줄 중 하나라는 점을 고려하세요. "
+                        "코드에서 발생할 수 있는 문제를 초보자가 이해할 수 있도록 쉽게 설명하고, 직접적인 정답을 제공하지 말고 간접적인 힌트를 주세요. "
+                        "학생이 실수를 통해 학습할 수 있도록 유도하세요. "
+                        "힌트는 지나치게 많은 정보를 제공하지 않도록 주의하며, 핵심적인 부분만 짚어주세요. "
+                        "구문 오류(SyntaxError), 논리 오류(Logic Error), 오타 등의 일반적인 실수에 대해 올바른 방향을 제시하세요. "
+                        "단, 코드 예제는 절대 제공하지 마세요."),
                 ("user", "{oneline_code}")
             ]
         )
-        prompt_final_explanation_template = ChatPromptTemplate.from_messages(
+        prompt_final_explanation_template = ChatPromptTemplate.from_messagesprompt_study_guide_template = ChatPromptTemplate.from_messages(
             [
-                ("system","이전 대화 내역을 기반으로 유저가 앞으로 {original_codes}를 작성할때 자주 실수할수 있는 문제나 중요한점을 짚어서 최종 해설을 해줘")
+                ("system", "당신은 30년 경력의 파이썬 강사입니다. "
+                        "지금까지 사용자가 입력한 코드와 그에 대한 피드백을 기억하고 있습니다. "
+                        "이전 대화 내용을 참조하여, 사용자가 자주 했던 실수 패턴을 분석하고 "
+                        "원래 작성해야 할 코드({original_codes})와 비교해 어떤 점을 주의해야 할지 설명하세요. "
+                        "사용자가 앞으로 같은 유형의 코드를 작성할 때 실수하지 않도록 가이드를 제공하세요. "
+                        "너무 많은 정보를 한꺼번에 제공하지 말고, 핵심적인 실수 패턴을 정리해서 전달하세요. "
+                        "정답을 직접 알려주지 말고, 사용자가 스스로 학습할 수 있도록 유도하세요."),
+                ("user", "지금까지의 대화 내용을 참고하여, 내가 자주 했던 실수를 분석하고 앞으로 같은 유형의 코드를 작성할 때 주의해야 할 점을 알려줘.")
             ]
-        ) 
+        )
+        
+
         # LangGraph 워크플로우 설정
         self.workflow = StateGraph(state_schema=State)
 
         def initial_interpretation(state: State):
             """벡터 데이터 + 유저 입력 → LLM 호출"""
-            #context = "\n".join(state["context_docs"])
+            context_docs = ",".join(state["context_docs"])
             if state["prompt_model"] == "initial_model":
-                prompt = prompt_initial_template.invoke({"original_codes": state["original_codes"], "context_docs": state["context_docs"]})
+                prompt = prompt_initial_template.invoke({"original_codes": state["original_codes"], "context_docs": context_docs})
             elif state["prompt_model"] == "user_input_model":
-                prompt = prompt_hint_for_fail_template.invoke({"original_codes": state["original_codes"], "context_docs": state["context_docs"], 'oneline_code': state['oneline_code']})
+                prompt = prompt_hint_for_fail_template.invoke({"original_codes": state["original_codes"], "context_docs": context_docs, 'oneline_code': state['oneline_code']})
             else:
                 prompt = prompt_final_explanation_template.invoke({'original_codes':state['original_codes']})
             #print(prompt)
