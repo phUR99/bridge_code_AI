@@ -19,7 +19,7 @@ def vectorspace(model, data_path:str="data.csv"):
     df = pd.read_csv(filepath_or_buffer= data_path)
     loader = DataFrameLoader(df, page_content_column="output")
     docs = loader.load()
-    db = Chroma.from_documents(documents=docs, embedding=model)
+    db = Chroma.from_documents(documents=docs, embedding=model, persist_directory="./chorma_db")
     return db
     
 
