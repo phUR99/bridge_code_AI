@@ -1,11 +1,11 @@
 from dotenv import load_dotenv
 from langchain.chat_models import init_chat_model
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.prompts import ChatPromptTemplate
 from langgraph.graph import START, StateGraph
 from langgraph.checkpoint.memory import MemorySaver
 from typing import List, TypedDict
 
-class State(TypedDict):
+class State(TypedDict, total= False):
     #context_docs : 검색된 벡터데이터
     original_codes: str
     oneline_code: str
@@ -56,11 +56,11 @@ class LLM:
             response = self.model.invoke(prompt)
             return {'final explanation': response}
 
-        self.workflow.add_node("initial_interpretation", initial_interpretation)
-        self.workflow.add_node("user_input_interpretation", user_input_interpretation)
-        self.workflow.add_node("final_summary", final_summary)
+        self.workflow.add_node("initial_interpretation", self.initial_interpretation)
+        self.workflow.add_node("user_input_interpretation", self.user_input_interpretation)
+        self.workflow.add_node("final_summary", self.final_summary)
 
-        self.workflow.add_edge(START, "initial_interpretation")
+        self.workflow.add_edge(START, "initial_interpretation") 
 
         # MemorySaver를 사용하여 사용자별 대화 이력 저장
         self.memory = MemorySaver() 
@@ -70,18 +70,19 @@ class LLM:
         """사용자별 대화 이력 + RAG 응답 반환"""
         config = {"configurable": {"thread_id": user_id}}
         state = {"context_docs": context_docs, "original_codes": original_codes, "user_id": user_id}
-        output = self.app.invoke(state, config, node = "initial_interpretation")
-        return output["response"]
+        output = self.app.invoke_step("initial_interpretation",state, config )
+        return output["initial_response"]
 
     def interpret_user_input(self, user_id: str, oneline_code: str, context_docs: list[str]) -> str:
         config = {"configurable": {"thread_id": user_id}}
         state = self.memory.load_state(user_id)
         state["oneline_code"] = oneline_code
-        output = self.app.invoke(state, config, node = "user_input_interpretation")
+        output = self.app.invoke_step("user_input_interpretation",state, config)
         return output["user_input_response"]
     
     def summarize_user_inputs(self, user_id: str) -> str:
         config = {"configurable": {"thread_id": user_id}}
         state = self.memory.load_state(user_id)
-        output = self.app.invoke(state, config, node = "final_summary")
+        output = self.app.invoke_step("final_summary", state, config)
         return output["final explanation"]
+    
