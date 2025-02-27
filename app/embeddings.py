@@ -9,10 +9,11 @@ def embedding(vectors, query: list, data_path:str='data.csv'):
     
     docs = vectors
     ret =[]
+    retrieve =  docs.as_retriever(search_type="mmr", search_kwargs={'k':3, 'fetch_k':10})
     for elements in query:
-        retrieved_docs = db.similarity_search(query=elements, k=3)
+        retrieved_docs = retrieve.invoke(input=elements)
         for context in retrieved_docs: 
-            ret.append(context)
+            ret.append(context.page_content)
     return ret
 
 def vectorspace(model, data_path:str="data.csv"):
@@ -34,12 +35,19 @@ if __name__ == '__main__':
         model_kwargs = model_kwargs,
         encode_kwargs = encode_kwargs
     )
-    db = vectorspace(hf)
+    import os
+    if os.path.exists("chorma_db"):
+        print("load")
+        db = Chroma(persist_directory="./chorma_db", embedding_function=hf)
+    else:
+        print("make")
+        db = vectorspace(model=hf)
+
     import time
     start = time.time()
-    print(embedding(db, ["for"]))
-    print(embedding(db, ["for"]))
-    print(embedding(db, ["for"]))
-    print(time.time() - start)
+    result = embedding(db, ['elif'])
+    for ret in result:
+        print(result[0])
+
     
     

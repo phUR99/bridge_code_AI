@@ -9,7 +9,7 @@ from langchain_community.vectorstores import Chroma
 import utils
 # LLM 클래스 가져오기
 from llm import LLM
-from embeddings import embeddings, vectorspace
+from embeddings import embedding, vectorspace
 
 # 환경 변수 로드
 load_dotenv()
@@ -17,6 +17,8 @@ load_dotenv()
 model_name = "BAAI/bge-small-en"
 model_kwargs = {'device':'cpu'}
 encode_kwargs = {'normalize_embeddings' : True}
+
+db=None
 hf = HuggingFaceEmbeddings(model_name="BAAI/bge-small-en", model_kwargs=model_kwargs, encode_kwargs=encode_kwargs)
 print("model!")
 if os.path.exists("chorma_db"):
@@ -56,26 +58,24 @@ def interpret_initial_code_api(request: InitialQueryRequest):
     """
     사용자 입력을 임베딩 -> 벡터 DB에서 검색 -> LLM에 전달 -> 응답 반환
     """
+    global db
     # API 토큰 검증
-
-    try:
-        input_list = utils.str_to_list(request.original_codes)
-        #  1. 유저 입력을 임베딩
-        embedding = embedding(input_list) # 여러줄로 나눠서 받아야 할듯
-        #  2. 벡터 데이터베이스에서 검색
-        #context_docs = query_vectorstore(embedding, n_results=3)
-
-        #  3. LLM 호출 및 응답 반환
-        response = llm.interpret_initial_code(
-            user_id=request.user_id,
-            original_codes = request.original_codes,
-            context_docs=embedding,
-            prompt_model= "initial_model"
-        )
-        return {"response": response}
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    
+    input_list = utils.str_to_list(request.original_codes)
+    #  1. 유저 입력을 임베딩
+    embedding_text = embedding(vectors=db, query=input_list) # 여러줄로 나눠서 받아야 할듯
+    #  2. 벡터 데이터베이스에서 검색
+    #context_docs = query_vectorstore(embedding, n_results=3)
+    #print(type(embedding_text[0]))
+    #  3. LLM 호출 및 응답 반환
+    response = llm.interpret_initial_code(
+        user_id=request.user_id,
+        original_codes = request.original_codes,
+        context_docs=embedding_text,
+        prompt_model= "initial_model"
+    )
+    #print(response)
+    return {"response":response}
 
 @app.post("/interpret_user_input/")
 def interpret_user_input_api(request: UserInputRequest):
