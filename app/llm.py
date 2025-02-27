@@ -4,7 +4,7 @@ from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langgraph.graph import START, StateGraph, END
 from langgraph.checkpoint.memory import MemorySaver
-from typing import List, TypedDict
+from typing import List, TypedDict, Union
 
 class State(TypedDict, total= False):
     context_docs : list[str]
@@ -15,7 +15,9 @@ class State(TypedDict, total= False):
     response: str
 
 class LLM:
-    def __init__(self):
+    original_codes = "Hello world"
+    def __init__(self, codes):
+        original_codes = codes
         load_dotenv()
         model = ChatOpenAI(model="gpt-4o-mini")
 
@@ -34,7 +36,7 @@ class LLM:
         )
         prompt_final_explanation_template = ChatPromptTemplate.from_messages(
             [
-                ("system","{memory_state}를 참고해서 유저가 앞으로 {original_codes}를 작성할때 자주 실수할수 있는 문제나 중요한점을 짚어서 최종 해설을 해줘")
+                ("system","이전 대화 내역을 기반으로 유저가 앞으로 {original_codes}를 작성할때 자주 실수할수 있는 문제나 중요한점을 짚어서 최종 해설을 해줘")
             ]
         ) 
         # LangGraph 워크플로우 설정
@@ -46,7 +48,9 @@ class LLM:
             if state["prompt_model"] == "initial_model":
                 prompt = prompt_initial_template.invoke({"original_codes": state["original_codes"], "context_docs": state["context_docs"]})
             elif state["prompt_model"] == "user_input_model":
-                prompt = prompt_hint_for_fail_template.invoke({"original_codes": state["original_codes"], "context_docs": state["context_docs"]})
+                prompt = prompt_hint_for_fail_template.invoke({"original_codes": state["original_codes"], "context_docs": state["context_docs"], 'oneline_code': state['oneline_code']})
+            else:
+                prompt = prompt_final_explanation_template.invoke({'original_codes':state['original_codes']})
             #print(prompt)
             response = model.invoke(prompt)
             return {"response" : response.content}
@@ -72,11 +76,24 @@ class LLM:
         self.memory = MemorySaver() 
         self.app = self.workflow.compile(checkpointer=self.memory)
 
-    def interpret_initial_code(self, user_id: str, original_codes: str, context_docs: list[str], prompt_model : str) -> str:
+    def interpret_initial_code(self, user_id: str,  prompt_model : str, original_codes:Union[str,None]=original_codes, context_docs: Union[list[str],None]=None, oneline_code: Union[str, None] = None) -> str:
         """사용자별 대화 이력 + RAG 응답 반환"""
         config = {"configurable": {"thread_id": user_id}}
-        state = {"context_docs": context_docs, "original_codes": original_codes, "user_id": user_id, "prompt_model" : prompt_model}
-        print(context_docs)
+        print(original_codes)
+        if prompt_model == "initial_model":
+            state = {"context_docs": context_docs, "original_codes": original_codes, "user_id": user_id, "prompt_model" : prompt_model}
+        elif prompt_model == "user_input_model":
+            state = {            
+                "user_id" : user_id,
+                "oneline_code" : oneline_code,
+                "context_docs" : context_docs,
+                "prompt_model" : prompt_model,
+                "original_codes" : original_codes
+            }
+        else:
+            state = {"user_id" : user_id, 'prompt_model' : prompt_model, 'original_codes' : original_codes}
+        #print(context_docs)
+        print(state)
         output = self.app.invoke(state, config)
         print(output)
         return output["response"]

@@ -36,7 +36,7 @@ security = HTTPBearer()
 API_TOKEN = os.getenv("API_TOKEN")
 
 # LLM 클래스 초기화
-llm = LLM()
+llm = None
 
 
 #  요청 데이터 모델 정의 (Pydantic 사용)
@@ -56,7 +56,7 @@ def interpret_initial_code_api(request: InitialQueryRequest):
     """
     사용자 입력을 임베딩 -> 벡터 DB에서 검색 -> LLM에 전달 -> 응답 반환
     """
-    global db
+    global db, llm
     # API 토큰 검증
     
     input_list = utils.str_to_list(request.original_codes)
@@ -66,6 +66,7 @@ def interpret_initial_code_api(request: InitialQueryRequest):
     #context_docs = query_vectorstore(embedding, n_results=3)
     #print(type(embedding_text[0]))
     #  3. LLM 호출 및 응답 반환
+    llm = LLM(request.original_codes)
     response = llm.interpret_initial_code(
         user_id=request.user_id,
         original_codes = request.original_codes,
@@ -73,25 +74,28 @@ def interpret_initial_code_api(request: InitialQueryRequest):
         prompt_model= "initial_model"
     )
     #print(response)
+    print(llm.original_codes)
     return {"response":response}
 
 @app.post("/interpret_user_input/")
 def interpret_user_input_api(request: UserInputRequest):
     
     # API 토큰 검증
-
+    global db, llm
+    print(llm.original_codes)
     try:
-        input_list = app.utils.str_to_list(request.oneline_code)
+        input_list = utils.str_to_list(request.oneline_code)
         #  1. 유저 입력을 임베딩
-        embedding = embedding(input_list)
+        embedding_text = embedding(vectors=db, query=input_list)
         #  2. 벡터 데이터베이스에서 검색
         #context_docs = query_vectorstore(embedding, n_results=3)
-
+        #print(input_list)
+        #print(request.oneline_code)
         #  3. LLM 호출 및 응답 반환
         response = llm.interpret_initial_code(
             user_id=request.user_id,
             oneline_code = request.oneline_code,
-            context_docs = embedding,
+            context_docs = embedding_text,
             prompt_model = "user_input_model"
             
         )
@@ -104,9 +108,10 @@ def interpret_user_input_api(request: UserInputRequest):
 def summarize_user_inputs_api(request: FinalSummaryRequest):
 
     # API 토큰 검증
+    global llm
     try:
-        response = llm.summarize_user_inputs(
-            user_id=request.user_id,
+        response = llm.interpret_initial_code(
+            user_id = request.user_id,
             prompt_model = "summarize_model"
         )
         return {"response": response}
