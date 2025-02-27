@@ -60,7 +60,7 @@ class LLM:
         self.workflow.add_node("user_input_interpretation", user_input_interpretation)
         self.workflow.add_node("final_summary", final_summary)
 
-        
+        self.workflow.add_edge(START, "initial_interpretation")
 
         # MemorySaver를 사용하여 사용자별 대화 이력 저장
         self.memory = MemorySaver() 
