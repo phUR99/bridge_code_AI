@@ -17,8 +17,6 @@ load_dotenv()
 model_name = "BAAI/bge-small-en"
 model_kwargs = {'device':'cpu'}
 encode_kwargs = {'normalize_embeddings' : True}
-
-db=None
 hf = HuggingFaceEmbeddings(model_name="BAAI/bge-small-en", model_kwargs=model_kwargs, encode_kwargs=encode_kwargs)
 print("model!")
 if os.path.exists("chorma_db"):
@@ -109,6 +107,7 @@ def summarize_user_inputs_api(request: FinalSummaryRequest):
     try:
         response = llm.summarize_user_inputs(
             user_id=request.user_id,
+            prompt_model = "summarize_model"
         )
         return {"response": response}
 

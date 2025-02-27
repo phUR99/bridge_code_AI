@@ -57,7 +57,7 @@ class LLM:
             response = self.model.invoke(prompt)
             return {"response": response}
         
-        def final_summary(state: State):
+        #def final_summary(state: State):
             memory_state = self.memory.load_state(state["user_id"])
             prompt = self.prompt_final_explanation_template.invoke({"memory_state": memory_state, "original_codes" : state["original_codes"]})
             response = self.model.invoke(prompt)
@@ -81,14 +81,14 @@ class LLM:
         print(output)
         return output["response"]
 
-    def interpret_user_input(self, user_id: str, oneline_code: str, context_docs: list[str]) -> str:
+    #def interpret_user_input(self, user_id: str, oneline_code: str, context_docs: list[str]) -> str:
         config = {"configurable": {"thread_id": user_id}}
         state = self.memory.load_state(user_id)
         state["oneline_code"] = oneline_code
         output = self.app.invoke_step("user_input_interpretation",state, config)
         return output["user_input_response"]
     
-    def summarize_user_inputs(self, user_id: str) -> str:
+    #def summarize_user_inputs(self, user_id: str) -> str:
         config = {"configurable": {"thread_id": user_id}}
         state = self.memory.load_state(user_id)
         output = self.app.invoke_step("final_summary", state, config)
