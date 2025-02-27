@@ -9,7 +9,7 @@ from langchain_community.vectorstores import Chroma
 import utils
 # LLM 클래스 가져오기
 from llm import LLM
-from embeddings import embedding, vectorspace
+from embeddings import embeddings, vectorspace
 
 # 환경 변수 로드
 load_dotenv()
