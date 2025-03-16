@@ -1,9 +1,8 @@
 from langchain_community.embeddings import HuggingFaceEmbeddings, OpenAIEmbeddings
 import dotenv
-from langchain_chroma import Chroma
 from langchain_community.document_loaders import PyPDFLoader, DataFrameLoader
 import pandas as pd
-
+from langchain_chroma import Chroma
 
 def embedding(vectors, query: list, data_path:str='data.csv'):
     
@@ -48,6 +47,3 @@ if __name__ == '__main__':
     result = embedding(db, ['elif'])
     for ret in result:
         print(result[0])
-
-    
-    

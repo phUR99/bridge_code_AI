@@ -1,0 +1,24 @@
+question,topic
+"x = 10
+y = 20
+sum_xy = x + y",두 개의 숫자를 더하는 간단한 연산
+"name = 'Alice'
+print(f'Hello, {name}')",f-string을 사용한 문자열 포맷팅
+is_even = lambda x: x % 2 == 0,람다 함수를 사용한 짝수 판별
+"my_list = [1, 2, 3, 4]
+my_list.append(5)",리스트에 요소 추가
+"my_dict = {'name': 'Alice', 'age': 25}
+print(my_dict['name'])",딕셔너리에서 값 가져오기
+"def greet(name):
+    return f'Hello, {name}'",함수를 사용한 간단한 인사
+"import numpy as np
+arr = np.array([1, 2, 3])",NumPy 배열 생성
+"import pandas as pd
+df = pd.DataFrame({'A': [1], 'B': [3]})",Pandas 데이터프레임 생성
+"total = 0
+for num in range(1, 11): 
+    total += num  
+", 1부터 10까지의 합을 계산하는 프로그램을 작성하세요.
+"class Animal:
+    def __init__(self):
+",기본 클래스 정의
